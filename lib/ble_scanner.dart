@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_blue/flutter_blue.dart';
+// scan state and cubit
+import 'ble_scan_state.dart';
+import 'ble_scan_cubit.dart';
 
 class ScannerApp extends StatelessWidget {
   @override
@@ -68,7 +71,10 @@ class ScanDevicesView extends StatelessWidget {
           title: Text("Scanner"),
           actions: [
             IconButton(
-                icon: Icon(Icons.stop),
+                icon: Icon(
+                  Icons.stop,
+                  color: Colors.red,
+                ),
                 onPressed: () {
                   BlocProvider.of<ScanCubit>(context).stop();
                 })
@@ -103,53 +109,4 @@ class ScanDevicesView extends StatelessWidget {
 class BluetoothCubit extends Cubit<BluetoothState> {
   FlutterBlue flutterBlue = FlutterBlue.instance;
   BluetoothCubit() : super(BluetoothState.unknown);
-}
-
-// Discovered Devices State and Cubit
-abstract class ScanState {}
-
-class WaitToScanState extends ScanState {}
-
-class ScanningState extends ScanState {}
-
-class ScannedState extends ScanState {
-  final List<BluetoothDevice> devices;
-  final List<ScanResult> devicesInfo;
-  ScannedState({required this.devices, required this.devicesInfo});
-}
-
-class ScanCubit extends Cubit<ScanState> {
-  final FlutterBlue flutterBlue = FlutterBlue.instance;
-  ScanCubit() : super(WaitToScanState());
-
-  void stop() {
-    List<BluetoothDevice> devices = [];
-    List<ScanResult> devicesInfo = [];
-
-    flutterBlue.stopScan();
-    emit(
-      ScannedState(devices: devices, devicesInfo: devicesInfo),
-    );
-  }
-
-  Future<void> scan() async {
-    List<BluetoothDevice> devices = [];
-    List<ScanResult> devicesInfo = [];
-    // Start scan
-    emit(ScanningState());
-    // Wait few second
-    flutterBlue.startScan(timeout: Duration(seconds: 2));
-    flutterBlue.scanResults.listen((results) {
-      print("found ${results.length}");
-      for (ScanResult result in results) {
-        final BluetoothDevice device = result.device;
-        if (!devices.contains(device)) {
-          devicesInfo.add(result);
-          devices.add(result.device);
-          emit(ScannedState(devices: devices, devicesInfo: devicesInfo));
-        }
-      }
-    });
-    // Update found device
-  }
 }
