@@ -15,7 +15,6 @@ class DeviceCubit extends Cubit<DeviceState> {
     await device.connect(autoConnect: false).timeout(Duration(seconds: 5),
         onTimeout: () {
       isTimeout = true;
-
       device.disconnect();
       // Time out
       emit(DeviceConnectedState(status: DeviceStatus.timeout, device: device));

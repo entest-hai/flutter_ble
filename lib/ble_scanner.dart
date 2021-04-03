@@ -1,5 +1,4 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_blue/flutter_blue.dart';
@@ -9,6 +8,8 @@ import 'ble_scan_cubit.dart';
 // device state and cubit
 import 'device_state.dart';
 import 'device_cubit.dart';
+// connecting device alert
+import 'alert_builder.dart';
 
 class ScannerApp extends StatelessWidget {
   @override
@@ -28,10 +29,35 @@ class ScannerApp extends StatelessWidget {
 class ScannNavigator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    BlocBuilder<DeviceCubit, DeviceState>(
+      builder: (context, state) {
+        if (state is DeviceConnectedState) {
+          return Navigator(
+            pages: [
+              MaterialPage(child: ScannerView()),
+              MaterialPage(child: DeviceView())
+            ],
+            onPopPage: (route, result) => route.didPop(result),
+          );
+        } else {
+          return Navigator(
+            pages: [
+              MaterialPage(child: ScannerView()),
+              // MaterialPage(child: DeviceView())
+            ],
+            onPopPage: (route, result) => route.didPop(result),
+          );
+        }
+      },
+    );
     return Navigator(
-      pages: [MaterialPage(child: ScannerView())],
+      pages: [
+        MaterialPage(child: ScannerView()),
+        // MaterialPage(child: DeviceView())
+      ],
       onPopPage: (route, result) => route.didPop(result),
     );
+    ;
   }
 }
 
@@ -51,7 +77,7 @@ class ScannerView extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text("Scanner"),
+            title: Text("Device"),
           ),
           body: Center(
             child: Text("BLE UNKNOW"),
@@ -103,14 +129,15 @@ class ScanDevicesView extends StatelessWidget {
                               "UUID: ${state.devicesInfo[index].device.id}, name: ${state.devicesInfo[index].device.name}, RSSI: ${state.devicesInfo[index].rssi},  manufacture: ${state.devicesInfo[index].advertisementData.manufacturerData.toString()}"),
                         )),
                         ElevatedButton(
-                            onPressed: () {
-                              showModalBottomSheet(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return DeviceView();
-                                  });
-                              BlocProvider.of<DeviceCubit>(context)
+                            onPressed: () async {
+                              AlertBuilder(context).showLoadingIndicator();
+                              await BlocProvider.of<DeviceCubit>(context)
                                   .connect(state.devices[index]);
+                              Navigator.of(context, rootNavigator: true).pop();
+                              Navigator.push(context,
+                                  MaterialPageRoute(builder: (context) {
+                                return DeviceView();
+                              }));
                             },
                             child: Text("Connect"))
                       ],
@@ -145,52 +172,77 @@ class ScanDevicesView extends StatelessWidget {
 class DeviceView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DeviceCubit, DeviceState>(builder: (context, state) {
-      if (state is DeviceWaitConnectState) {
-        return Container(
-          height: MediaQuery.of(context).size.height / 2,
-        );
-      } else if (state is DeviceConnectingState) {
-        return Container(
-          height: MediaQuery.of(context).size.height / 2,
-          child: Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
-      } else if (state is DeviceConnectedState) {
-        return Container(
-          height: MediaQuery.of(context).size.height / 2,
-          child: Column(
-            children: [
-              Expanded(
-                  child: ListView(
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Service"),
+      ),
+      body: BlocBuilder<DeviceCubit, DeviceState>(
+        builder: (context, state) {
+          if (state is DeviceWaitConnectState) {
+            return Container(
+                // height: MediaQuery.of(context).size.height / 2,
+                );
+          } else if (state is DeviceConnectingState) {
+            return Container(
+              // height: MediaQuery.of(context).size.height / 2,
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          } else if (state is DeviceConnectedState) {
+            return Container(
+              // height: MediaQuery.of(context).size.height / 2,
+              child: Column(
                 children: [
-                  ListTile(
-                    title: Text(
-                      "Device UUID: ${state.device.id} name: ${state.device.name}",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  ListTile(
-                    tileColor: Colors.green[200],
-                    title: Text(
-                      "Status: ${state.status}",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  ...state.services.map((service) => ListTile(
-                        title: Text("${service.uuid.toString()}"),
-                      )),
+                  Expanded(
+                      child: ListView(
+                    children: [
+                      Card(
+                        color: Colors.white,
+                        child: ListTile(
+                          title: Text(
+                            "Device UUID: ${state.device.id} name: ${state.device.name} Status: ${state.status}",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                      for (var service in state.services)
+                        ...ServiceCard(service).buildCard(context)
+                    ],
+                  )),
                 ],
-              )),
-            ],
+              ),
+            );
+          } else {
+            return Container(
+              height: MediaQuery.of(context).size.height / 2,
+            );
+          }
+        },
+      ),
+    );
+  }
+}
+
+class ServiceCard {
+  final BluetoothService service;
+  ServiceCard(this.service);
+
+  List<Widget> buildCard(BuildContext context) {
+    return [
+      Card(
+        color: Colors.green[200],
+        child: ListTile(
+          title: Text("Service UUID: ${service.uuid.toString()}"),
+        ),
+      ),
+      for (var char in service.characteristics)
+        Card(
+          color: Colors.white,
+          child: ListTile(
+            title: Text("Char UUID: ${char.uuid.toString()}"),
           ),
-        );
-      } else {
-        return Container(
-          height: MediaQuery.of(context).size.height / 2,
-        );
-      }
-    });
+        )
+    ];
   }
 }
