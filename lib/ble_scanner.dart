@@ -100,7 +100,7 @@ class ScanDevicesView extends StatelessWidget {
                         Expanded(
                             child: ListTile(
                           title: Text(
-                              "UUID: ${state.devicesInfo[index].device.id}, name: ${state.devicesInfo[index].device.name}, RSSI: ${state.devicesInfo[index].rssi},  manufacture: ${state.devicesInfo[index].advertisementData.manufacturerData}"),
+                              "UUID: ${state.devicesInfo[index].device.id}, name: ${state.devicesInfo[index].device.name}, RSSI: ${state.devicesInfo[index].rssi},  manufacture: ${state.devicesInfo[index].advertisementData.manufacturerData.toString()}"),
                         )),
                         ElevatedButton(
                             onPressed: () {
@@ -162,19 +162,15 @@ class DeviceView extends StatelessWidget {
           height: MediaQuery.of(context).size.height / 2,
           child: Column(
             children: [
-              Container(
-                color: Colors.white,
-                height: 50,
-                child: ListTile(
-                  title: Text(
-                    "Device UUID: ${state.device.id} name: ${state.device.name}",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
               Expanded(
                   child: ListView(
                 children: [
+                  ListTile(
+                    title: Text(
+                      "Device UUID: ${state.device.id} name: ${state.device.name}",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                   ListTile(
                     tileColor: Colors.green[200],
                     title: Text(
