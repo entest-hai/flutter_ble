@@ -1,9 +1,14 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 // scan state and cubit
 import 'ble_scan_state.dart';
 import 'ble_scan_cubit.dart';
+// device state and cubit
+import 'device_state.dart';
+import 'device_cubit.dart';
 
 class ScannerApp extends StatelessWidget {
   @override
@@ -11,8 +16,8 @@ class ScannerApp extends StatelessWidget {
     return MaterialApp(
       home: MultiBlocProvider(
         providers: [
-          BlocProvider(create: (context) => BluetoothCubit()),
-          BlocProvider(create: (context) => ScanCubit())
+          BlocProvider(create: (context) => ScanCubit()),
+          BlocProvider(create: (context) => DeviceCubit())
         ],
         child: ScannNavigator(),
       ),
@@ -90,23 +95,106 @@ class ScanDevicesView extends StatelessWidget {
                 itemCount: state.devices.length,
                 itemBuilder: (context, index) {
                   return Card(
-                    child: ListTile(
-                      title: Text(state.devicesInfo[index].toString()),
-                      // "${state.devicesInfo[index].device.id} ${state.devicesInfo[index].device.name} ${state.devicesInfo[index].rssi}"),
+                    child: Row(
+                      children: [
+                        Expanded(
+                            child: ListTile(
+                          title: Text(
+                              "UUID: ${state.devicesInfo[index].device.id}, name: ${state.devicesInfo[index].device.name}, RSSI: ${state.devicesInfo[index].rssi},  manufacture: ${state.devicesInfo[index].advertisementData.manufacturerData}"),
+                        )),
+                        ElevatedButton(
+                            onPressed: () {
+                              showModalBottomSheet(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return DeviceView();
+                                  });
+                              BlocProvider.of<DeviceCubit>(context)
+                                  .connect(state.devices[index]);
+                            },
+                            child: Text("Connect"))
+                      ],
                     ),
                   );
                 });
           } else {
-            return Container(
-              color: Colors.white,
-            );
+            return ListView.builder(
+                itemCount: 0,
+                itemBuilder: (context, index) {
+                  return Card(
+                    child: Row(
+                      children: [
+                        Expanded(
+                            child: ListTile(
+                          title: Text("very long device information "),
+                        )),
+                        ElevatedButton(
+                            onPressed: () {
+                              // BlocProvider.of<DeviceCubit>(context).connect();
+                            },
+                            child: Text("Connect"))
+                      ],
+                    ),
+                  );
+                });
           }
         }));
   }
 }
 
-// BluetoothState  and BluetoothCubit
-class BluetoothCubit extends Cubit<BluetoothState> {
-  FlutterBlue flutterBlue = FlutterBlue.instance;
-  BluetoothCubit() : super(BluetoothState.unknown);
+class DeviceView extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<DeviceCubit, DeviceState>(builder: (context, state) {
+      if (state is DeviceWaitConnectState) {
+        return Container(
+          height: MediaQuery.of(context).size.height / 2,
+        );
+      } else if (state is DeviceConnectingState) {
+        return Container(
+          height: MediaQuery.of(context).size.height / 2,
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      } else if (state is DeviceConnectedState) {
+        return Container(
+          height: MediaQuery.of(context).size.height / 2,
+          child: Column(
+            children: [
+              Container(
+                color: Colors.white,
+                height: 50,
+                child: ListTile(
+                  title: Text(
+                    "Device UUID: ${state.device.id} name: ${state.device.name}",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              Expanded(
+                  child: ListView(
+                children: [
+                  ListTile(
+                    tileColor: Colors.green[200],
+                    title: Text(
+                      "Status: ${state.status}",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  ...state.services.map((service) => ListTile(
+                        title: Text("${service.uuid.toString()}"),
+                      )),
+                ],
+              )),
+            ],
+          ),
+        );
+      } else {
+        return Container(
+          height: MediaQuery.of(context).size.height / 2,
+        );
+      }
+    });
+  }
 }
