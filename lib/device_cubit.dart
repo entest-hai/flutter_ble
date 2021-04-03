@@ -1,15 +1,23 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'device_state.dart';
 import 'device_status.dart';
+import 'alert_builder.dart';
 
 class DeviceCubit extends Cubit<DeviceState> {
   DeviceCubit() : super(DeviceWaitConnectState());
 
-  Future<void> connect(BluetoothDevice device) async {
+  Future<void> disconnect(BluetoothDevice device) async {
+    await device.disconnect();
+    emit(DeviceWaitConnectState());
+  }
+
+  Future<void> connect(BuildContext context, BluetoothDevice device) async {
     bool isTimeout = false;
 
     // Try connecting to device
+    AlertBuilder(context).showLoadingIndicator();
     emit(DeviceConnectingState());
 
     await device.connect(autoConnect: false).timeout(Duration(seconds: 5),
@@ -17,23 +25,26 @@ class DeviceCubit extends Cubit<DeviceState> {
       isTimeout = true;
       device.disconnect();
       // Time out
-      emit(DeviceConnectedState(status: DeviceStatus.timeout, device: device));
+      AlertBuilder(context).hideOpenDialog();
+      emit(DeviceConnectedFailed(exception: "time out"));
     }).then((value) async {
       if (!isTimeout) {
         // Connected
+        AlertBuilder(context).hideOpenDialog();
         emit(DeviceConnectedState(
             status: DeviceStatus.connected, device: device));
 
         // Discover service
-        await discoverService(device);
+        await discoverService(context, device);
       }
     }).onError((error, stackTrace) {
-      emit(DeviceConnectedState(
-          status: DeviceStatus.unconnected, device: device));
+      AlertBuilder(context).hideOpenDialog();
+      emit(DeviceConnectedFailed(exception: error.toString()));
     });
   }
 
-  Future<void> discoverService(BluetoothDevice device) async {
+  Future<void> discoverService(
+      BuildContext context, BluetoothDevice device) async {
     await device.discoverServices().then((services) {
       if (services.length > 0) {
         emit(DeviceConnectedState(
@@ -41,12 +52,10 @@ class DeviceCubit extends Cubit<DeviceState> {
             device: device,
             services: services));
       } else {
-        emit(DeviceConnectedState(
-            status: DeviceStatus.connected_found_zero_service, device: device));
+        emit(DeviceConnectedFailed(exception: "no service"));
       }
     }).onError((error, stackTrace) {
-      emit(DeviceConnectedState(
-          status: DeviceStatus.connected_failed_found_service, device: device));
+      emit(DeviceConnectedFailed(exception: error.toString()));
     });
   }
 }

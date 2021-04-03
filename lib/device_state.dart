@@ -7,6 +7,11 @@ class DeviceWaitConnectState extends DeviceState {}
 
 class DeviceConnectingState extends DeviceState {}
 
+class DeviceConnectedFailed extends DeviceState {
+  final String exception;
+  DeviceConnectedFailed({required this.exception});
+}
+
 class DeviceConnectedState extends DeviceState {
   final DeviceStatus status;
   final BluetoothDevice device;

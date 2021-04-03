@@ -29,35 +29,17 @@ class ScannerApp extends StatelessWidget {
 class ScannNavigator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    BlocBuilder<DeviceCubit, DeviceState>(
-      builder: (context, state) {
-        if (state is DeviceConnectedState) {
-          return Navigator(
-            pages: [
-              MaterialPage(child: ScannerView()),
-              MaterialPage(child: DeviceView())
-            ],
-            onPopPage: (route, result) => route.didPop(result),
-          );
-        } else {
-          return Navigator(
-            pages: [
-              MaterialPage(child: ScannerView()),
-              // MaterialPage(child: DeviceView())
-            ],
-            onPopPage: (route, result) => route.didPop(result),
-          );
-        }
-      },
-    );
-    return Navigator(
-      pages: [
-        MaterialPage(child: ScannerView()),
-        // MaterialPage(child: DeviceView())
-      ],
-      onPopPage: (route, result) => route.didPop(result),
-    );
-    ;
+    return BlocBuilder<DeviceCubit, DeviceState>(builder: (context, state) {
+      return Navigator(
+        pages: [
+          MaterialPage(child: ScannerView()),
+          if (state is DeviceConnectedState) MaterialPage(child: DeviceView())
+        ],
+        onPopPage: (route, result) {
+          return route.didPop(result);
+        },
+      );
+    });
   }
 }
 
@@ -130,14 +112,9 @@ class ScanDevicesView extends StatelessWidget {
                         )),
                         ElevatedButton(
                             onPressed: () async {
-                              AlertBuilder(context).showLoadingIndicator();
-                              await BlocProvider.of<DeviceCubit>(context)
-                                  .connect(state.devices[index]);
-                              Navigator.of(context, rootNavigator: true).pop();
-                              Navigator.push(context,
-                                  MaterialPageRoute(builder: (context) {
-                                return DeviceView();
-                              }));
+                              BlocProvider.of<DeviceCubit>(context)
+                                  .connect(context, state.devices[index]);
+                              // Navigator.of(context, rootNavigator: true).pop();
                             },
                             child: Text("Connect"))
                       ],
@@ -172,55 +149,55 @@ class ScanDevicesView extends StatelessWidget {
 class DeviceView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Service"),
-      ),
-      body: BlocBuilder<DeviceCubit, DeviceState>(
-        builder: (context, state) {
-          if (state is DeviceWaitConnectState) {
-            return Container(
-                // height: MediaQuery.of(context).size.height / 2,
-                );
-          } else if (state is DeviceConnectingState) {
-            return Container(
-              // height: MediaQuery.of(context).size.height / 2,
-              child: Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
-          } else if (state is DeviceConnectedState) {
-            return Container(
-              // height: MediaQuery.of(context).size.height / 2,
-              child: Column(
-                children: [
-                  Expanded(
-                      child: ListView(
-                    children: [
-                      Card(
-                        color: Colors.white,
-                        child: ListTile(
-                          title: Text(
-                            "Device UUID: ${state.device.id} name: ${state.device.name} Status: ${state.status}",
-                            style: TextStyle(fontWeight: FontWeight.bold),
+    return BlocBuilder<DeviceCubit, DeviceState>(builder: (context, state) {
+      return Scaffold(
+        appBar: AppBar(
+          title: state is DeviceConnectedState
+              ? Text("${state.device.name} ${state.status}")
+              : Text("N/A ${state.toString()}"),
+        ),
+        body: BlocBuilder<DeviceCubit, DeviceState>(
+          builder: (context, state) {
+            if (state is DeviceWaitConnectState) {
+              return Container();
+            } else if (state is DeviceConnectingState) {
+              return Container(
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            } else if (state is DeviceConnectedState) {
+              return Container(
+                child: Column(
+                  children: [
+                    Expanded(
+                        child: ListView(
+                      children: [
+                        Card(
+                          color: Colors.white,
+                          child: ListTile(
+                            title: Text(
+                              "Device UUID: ${state.device.id} name: ${state.device.name} Status: ${state.status}",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ),
-                      ),
-                      for (var service in state.services)
-                        ...ServiceCard(service).buildCard(context)
-                    ],
-                  )),
-                ],
-              ),
-            );
-          } else {
-            return Container(
-              height: MediaQuery.of(context).size.height / 2,
-            );
-          }
-        },
-      ),
-    );
+                        for (var service in state.services)
+                          ...ServiceCard(service).buildCard(context)
+                      ],
+                    )),
+                  ],
+                ),
+              );
+            } else {
+              return Container(
+                height: MediaQuery.of(context).size.height / 2,
+              );
+            }
+          },
+        ),
+      );
+    });
   }
 }
 
