@@ -148,7 +148,7 @@ class DeviceView extends StatelessWidget {
       return Scaffold(
         appBar: AppBar(
           title: state is DeviceConnectedState
-              ? Text("${state.device.name} ${state.device.state.toString()}")
+              ? Text("${state.device.name}")
               : Text("N/A ${state.toString()}"),
         ),
         body: BlocBuilder<DeviceCubit, DeviceState>(
