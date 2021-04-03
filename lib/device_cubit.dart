@@ -13,7 +13,8 @@ class DeviceCubit extends Cubit<DeviceState> {
     emit(DeviceWaitConnectState());
   }
 
-  Future<void> connect(BuildContext context, BluetoothDevice device) async {
+  Future<void> connect(BuildContext context, BluetoothDevice device,
+      ScanResult scanResult) async {
     bool isTimeout = false;
 
     // Try connecting to device
@@ -26,16 +27,19 @@ class DeviceCubit extends Cubit<DeviceState> {
       device.disconnect();
       // Time out
       AlertBuilder(context).hideOpenDialog();
+      // Todo: alert or notification about time out error
       emit(DeviceConnectedFailed(exception: "time out"));
     }).then((value) async {
       if (!isTimeout) {
         // Connected
         AlertBuilder(context).hideOpenDialog();
         emit(DeviceConnectedState(
-            status: DeviceStatus.connected, device: device));
+            status: DeviceStatus.connected,
+            device: device,
+            scanResult: scanResult));
 
         // Discover service
-        await discoverService(context, device);
+        await discoverService(context, device, scanResult);
       }
     }).onError((error, stackTrace) {
       AlertBuilder(context).hideOpenDialog();
@@ -43,14 +47,16 @@ class DeviceCubit extends Cubit<DeviceState> {
     });
   }
 
-  Future<void> discoverService(
-      BuildContext context, BluetoothDevice device) async {
+  Future<void> discoverService(BuildContext context, BluetoothDevice device,
+      ScanResult scanResult) async {
     await device.discoverServices().then((services) {
       if (services.length > 0) {
         emit(DeviceConnectedState(
-            status: DeviceStatus.connected,
-            device: device,
-            services: services));
+          status: DeviceStatus.connected,
+          device: device,
+          scanResult: scanResult,
+          services: services,
+        ));
       } else {
         emit(DeviceConnectedFailed(exception: "no service"));
       }

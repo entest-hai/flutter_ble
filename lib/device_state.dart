@@ -15,8 +15,12 @@ class DeviceConnectedFailed extends DeviceState {
 class DeviceConnectedState extends DeviceState {
   final DeviceStatus status;
   final BluetoothDevice device;
+  final ScanResult scanResult;
   final List<BluetoothService> services;
 
   DeviceConnectedState(
-      {required this.status, required this.device, this.services = const []});
+      {required this.status,
+      required this.device,
+      required this.scanResult,
+      this.services = const []});
 }

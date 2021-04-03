@@ -24,7 +24,7 @@ class ScanCubit extends Cubit<ScanState> {
     // Wait few second
     flutterBlue.startScan(timeout: Duration(seconds: 4));
     flutterBlue.scanResults.listen((results) {
-      print("found ${results.length}");
+      print("found ${results.length} ${results.toString()}");
       for (ScanResult result in results) {
         final BluetoothDevice device = result.device;
         if (!devices.contains(device)) {

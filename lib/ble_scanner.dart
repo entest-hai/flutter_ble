@@ -8,8 +8,6 @@ import 'ble_scan_cubit.dart';
 // device state and cubit
 import 'device_state.dart';
 import 'device_cubit.dart';
-// connecting device alert
-import 'alert_builder.dart';
 
 class ScannerApp extends StatelessWidget {
   @override
@@ -108,13 +106,14 @@ class ScanDevicesView extends StatelessWidget {
                         Expanded(
                             child: ListTile(
                           title: Text(
-                              "UUID: ${state.devicesInfo[index].device.id}, name: ${state.devicesInfo[index].device.name}, RSSI: ${state.devicesInfo[index].rssi},  manufacture: ${state.devicesInfo[index].advertisementData.manufacturerData.toString()}"),
+                              "UUID: ${state.devicesInfo[index].device.id}, name: ${state.devicesInfo[index].device.name}, RSSI: ${state.devicesInfo[index].rssi},  adv: ${state.devicesInfo[index].advertisementData.toString()} ${state.devicesInfo[index].advertisementData.serviceUuids}"),
                         )),
                         ElevatedButton(
                             onPressed: () async {
-                              BlocProvider.of<DeviceCubit>(context)
-                                  .connect(context, state.devices[index]);
-                              // Navigator.of(context, rootNavigator: true).pop();
+                              BlocProvider.of<DeviceCubit>(context).connect(
+                                  context,
+                                  state.devices[index],
+                                  state.devicesInfo[index]);
                             },
                             child: Text("Connect"))
                       ],
@@ -132,11 +131,7 @@ class ScanDevicesView extends StatelessWidget {
                             child: ListTile(
                           title: Text("very long device information "),
                         )),
-                        ElevatedButton(
-                            onPressed: () {
-                              // BlocProvider.of<DeviceCubit>(context).connect();
-                            },
-                            child: Text("Connect"))
+                        ElevatedButton(onPressed: () {}, child: Text("Connect"))
                       ],
                     ),
                   );
@@ -153,7 +148,7 @@ class DeviceView extends StatelessWidget {
       return Scaffold(
         appBar: AppBar(
           title: state is DeviceConnectedState
-              ? Text("${state.device.name} ${state.status}")
+              ? Text("${state.device.name} ${state.device.state.toString()}")
               : Text("N/A ${state.toString()}"),
         ),
         body: BlocBuilder<DeviceCubit, DeviceState>(
@@ -182,6 +177,8 @@ class DeviceView extends StatelessWidget {
                             ),
                           ),
                         ),
+                        ...ScanResultCard(scanResult: state.scanResult)
+                            .buildCard(context),
                         for (var service in state.services)
                           ...ServiceCard(service).buildCard(context)
                       ],
@@ -198,6 +195,37 @@ class DeviceView extends StatelessWidget {
         ),
       );
     });
+  }
+}
+
+class ScanResultCard {
+  final ScanResult scanResult;
+  ScanResultCard({required this.scanResult});
+
+  List<Widget> buildCard(BuildContext context) {
+    return [
+      Card(
+        color: Colors.green[200],
+        child: ListTile(
+          title: Text("ADVERTIMENT DATA"),
+        ),
+      ),
+      Card(
+        child: ListTile(
+          title: Text("local name: ${scanResult.advertisementData.localName}"),
+        ),
+      ),
+      Card(
+        child: ListTile(
+          title: Text("txPower ${scanResult.advertisementData.txPowerLevel}"),
+        ),
+      ),
+      for (var serviceUUID in scanResult.advertisementData.serviceUuids)
+        Card(
+          child: ListTile(
+              title: Text("service $serviceUUID ${serviceUUID.toString()}")),
+        )
+    ];
   }
 }
 
