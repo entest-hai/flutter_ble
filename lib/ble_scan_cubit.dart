@@ -23,15 +23,20 @@ class ScanCubit extends Cubit<ScanState> {
     emit(ScanningState());
     // Wait few second
     flutterBlue.startScan(timeout: Duration(seconds: 4));
+
+    // Listen for scan result in stream
     flutterBlue.scanResults.listen((results) {
-      print("found ${results.length} ${results.toString()}");
-      for (ScanResult result in results) {
-        final BluetoothDevice device = result.device;
-        if (!devices.contains(device)) {
-          devicesInfo.add(result);
-          devices.add(result.device);
-          emit(ScannedState(devices: devices, devicesInfo: devicesInfo));
+      if (results.isNotEmpty) {
+        for (ScanResult result in results) {
+          final BluetoothDevice device = result.device;
+          if (!devices.contains(device)) {
+            devicesInfo.add(result);
+            devices.add(result.device);
+            emit(ScannedState(devices: devices, devicesInfo: devicesInfo));
+          }
         }
+      } else {
+        emit(ScannedState(devices: devices, devicesInfo: devicesInfo));
       }
     });
     // Update found device
