@@ -18,7 +18,7 @@ class DeviceCubit extends Cubit<DeviceState> {
     bool isTimeout = false;
 
     // Try connecting to device
-    AlertBuilder(context).showLoadingIndicator();
+    AlertBuilder(context).showScanningIndicator();
     emit(DeviceConnectingState());
 
     await device.connect(autoConnect: false).timeout(Duration(seconds: 5),
@@ -27,7 +27,7 @@ class DeviceCubit extends Cubit<DeviceState> {
       device.disconnect();
       // Time out
       AlertBuilder(context).hideOpenDialog();
-      // Todo: alert or notification about time out error
+      AlertBuilder(context).showTimeOutAlert();
       emit(DeviceConnectedFailed(exception: "time out"));
     }).then((value) async {
       if (!isTimeout) {
@@ -44,6 +44,7 @@ class DeviceCubit extends Cubit<DeviceState> {
     }).onError((error, stackTrace) {
       AlertBuilder(context).hideOpenDialog();
       emit(DeviceConnectedFailed(exception: error.toString()));
+      AlertBuilder(context).showErrorConnectionAlert(error.toString());
     });
   }
 

@@ -22,9 +22,11 @@ class AlertProgressView extends StatelessWidget {
             child: ElevatedButton(
               child: Text("Alert"),
               onPressed: () async {
-                AlertBuilder(context).showLoadingIndicator();
-                await Future.delayed(Duration(seconds: 5));
-                AlertBuilder(context).hideOpenDialog();
+                AlertBuilder(context).showErrorConnectionAlert("Unknown");
+                // AlertBuilder(context).showScanningIndicator();
+                // AlertBuilder(context).showTimeOutAlert();
+                // await Future.delayed(Duration(seconds: 5));
+                // AlertBuilder(context).hideOpenDialog();
               },
             ),
           )

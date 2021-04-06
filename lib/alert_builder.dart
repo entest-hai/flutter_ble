@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class AlertBuilder {
@@ -16,6 +17,84 @@ class AlertBuilder {
       builder: (BuildContext context) {
         return buildDeviceConnectingAlert();
       },
+    );
+  }
+
+  void showTimeOutAlert() {
+    showDialog(
+        barrierDismissible: true,
+        barrierColor: Colors.white.withOpacity(0.0),
+        context: context,
+        builder: (BuildContext context) {
+          return buildTimeOutAlert();
+        });
+  }
+
+  void showScanningIndicator() {
+    showDialog(
+        barrierDismissible: true,
+        barrierColor: Colors.white.withOpacity(0.0),
+        context: context,
+        builder: (BuildContext context) {
+          return buildScanningIndicator();
+        });
+  }
+
+  void showErrorConnectionAlert(String error) {
+    showDialog(
+        barrierDismissible: true,
+        barrierColor: Colors.white.withOpacity(0.0),
+        context: context,
+        builder: (BuildContext context) {
+          return buildErrorConnect(error);
+        });
+  }
+
+  CupertinoAlertDialog buildScanningIndicator() {
+    return CupertinoAlertDialog(
+      content: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 15),
+            child: Text("Connecting to the Peripheral"),
+          )
+        ],
+      ),
+    );
+  }
+
+  CupertinoAlertDialog buildTimeOutAlert() {
+    return CupertinoAlertDialog(
+      title: Text("Timeout"),
+      content: Text("Connecting fail from the Peripheral"),
+      actions: [
+        TextButton(
+            onPressed: () {
+              hideOpenDialog();
+            },
+            child: Text("OK"))
+      ],
+    );
+  }
+
+  CupertinoAlertDialog buildErrorConnect(String error) {
+    return CupertinoAlertDialog(
+      title: Text("Exception"),
+      content: Text("Failed to connect to the Peripheral \n $error"),
+      actions: [
+        TextButton(
+            onPressed: () {
+              hideOpenDialog();
+            },
+            child: Text("OK"))
+      ],
     );
   }
 
